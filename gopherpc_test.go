@@ -19,11 +19,11 @@ func TestGen(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !strings.Contains(buf.String(), "type TestService struct") {
-		t.Error("generated RPC file does not contain TestService")
+	if !strings.Contains(buf.String(), "type EchoService struct") {
+		t.Error("generated RPC file does not contain EchoService")
 	}
 
-	if !strings.Contains(buf.String(), "func (s TestService) Ping() (string, error)") {
-		t.Error("generated RPC file does not contain TestService.Ping")
+	if !strings.Contains(buf.String(), "func (s EchoService) Ping() (string, error)") {
+		t.Error("generated RPC file does not contain EchoService.Ping")
 	}
 }

@@ -11,15 +11,14 @@ import (
 
 func main() {
 	client := rpc.Client{
-		URL:                  "https://your-site.com/rpc",
-		CSRFToken:            "abcd",
-		EncodeClientRequest:  json.EncodeClientRequest,
-		DecodeClientResponse: json.DecodeClientResponse,
+		URL:       "https://your-site.com/rpc",
+		CSRFToken: "abcd",
+		Encoding:  json.Encoding{},
 	}
 
-	result, err := client.TestService().Ping()
+	result, err := client.EchoService().Ping()
 	if err != nil {
-		println("failed to call TestService.Ping: " + err.Error())
+		println("failed to call EchoService.Ping: " + err.Error())
 	} else {
 		println(result)
 	}

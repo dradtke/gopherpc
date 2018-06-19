@@ -12,7 +12,7 @@ First you need to define your RPC services and annotate them with a special
 comment. In your web server package, you can do that like this:
 
 ```go
-// rpc:gen
+// gopherpc:generate
 type TestService struct {}
 
 func (s TestService) Ping(r *http.Request, _ *struct{}, reply *string) error {

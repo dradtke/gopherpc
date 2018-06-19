@@ -25,17 +25,18 @@ type clientResponse struct {
 	Id     uint64           `json:"id"`
 }
 
-// EncodeClientRequest encodes parameters for a JSON-RPC client request.
-func EncodeClientRequest(method string, args interface{}) ([]byte, error) {
+type Encoding struct{}
+
+func (e Encoding) EncodeRequest(serviceMethod string, arg interface{}) ([]byte, error) {
 	c := &clientRequest{
-		Method: method,
-		Params: [1]interface{}{args},
+		Method: serviceMethod,
+		Params: [1]interface{}{arg},
 		Id:     uint64(rand.Int63()),
 	}
 	return json.Marshal(c)
 }
 
-func DecodeClientResponse(r io.Reader, reply interface{}) error {
+func (e Encoding) DecodeResponse(r io.Reader, reply interface{}) error {
 	var c clientResponse
 	if err := json.NewDecoder(r).Decode(&c); err != nil {
 		return errors.New("failed to decode response: " + err.Error())

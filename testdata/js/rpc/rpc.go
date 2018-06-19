@@ -19,17 +19,20 @@ type Client struct {
 	// CSRFToken is the CSRF token to include with each request.
 	CSRFToken string
 
-	// EncodeClientRequest encodes the client request. To use the
-	// included JSON implementation, set this to json.EncodeClientRequest.
-	EncodeClientRequest func(string, interface{}) ([]byte, error)
-
-	// DecodeClientResponse decodes the response. To use the included
-	// JSON implementation, set this to json.DecodeClientResponse.
-	DecodeClientResponse func(r io.Reader, reply interface{}) error
+	// Encoding specifies the encoding of messages sent to and from the
+	// RPC server. To use the included JSON implementation, set this to
+	// json.Encoding{}.
+	Encoding interface {
+		// EncodeRequest takes a method name like "Service.Method" and an argument
+		// and returns the body of the request to be sent.
+		EncodeRequest(serviceMethod string, arg interface{}) ([]byte, error)
+		// DecodeResponse decodes the response body represented by r into reply.
+		DecodeResponse(r io.Reader, reply interface{}) error
+	}
 }
 
-func (c Client) call(serviceMethod string, args, ret interface{}) error {
-	message, err := (c.EncodeClientRequest)(serviceMethod, args)
+func (c Client) call(serviceMethod string, arg, ret interface{}) error {
+	message, err := c.Encoding.EncodeRequest(serviceMethod, arg)
 	if err != nil {
 		return err
 	}
@@ -41,17 +44,17 @@ func (c Client) call(serviceMethod string, args, ret interface{}) error {
 		return err
 	}
 
-	return (c.DecodeClientResponse)(strings.NewReader(req.ResponseText), &ret)
+	return c.Encoding.DecodeResponse(strings.NewReader(req.ResponseText), &ret)
 }
 
-type TestService struct{ Client }
+type EchoService struct{ Client }
 
-func (c Client) TestService() TestService {
-	return TestService{c}
+func (c Client) EchoService() EchoService {
+	return EchoService{c}
 }
 
-func (s TestService) Ping() (string, error) {
+func (s EchoService) Ping() (string, error) {
 	var reply string
-	err := s.call("TestService.Ping", nil, &reply)
+	err := s.call("EchoService.Ping", nil, &reply)
 	return reply, err
 }

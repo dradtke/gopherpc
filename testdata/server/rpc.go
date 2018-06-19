@@ -2,10 +2,12 @@ package server
 
 import "net/http"
 
-// rpc:gen
-type TestService struct{}
+// EchoService is a simple RPC service that implements Ping.
+// gopherpc:generate
+type EchoService struct{}
 
-func (s TestService) Ping(r *http.Request, _ *struct{}, reply *string) error {
+// Ping always responds with "pong".
+func (s EchoService) Ping(r *http.Request, _ *struct{}, reply *string) error {
 	*reply = "pong"
 	return nil
 }
