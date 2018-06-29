@@ -29,6 +29,8 @@ var (
 package {{.PackageName}}
 
 import (
+	"errors"
+
 	"honnef.co/go/js/xhr"
 )
 
@@ -53,6 +55,10 @@ type Client struct {
 }
 
 func (c Client) call(serviceMethod string, arg, ret interface{}) error {
+	if c.Encoding == nil {
+		return errors.New("no rpc encoding specified!")
+	}
+
 	message, err := c.Encoding.EncodeRequest(serviceMethod, arg)
 	if err != nil {
 		return err
