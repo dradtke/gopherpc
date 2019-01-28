@@ -7,8 +7,6 @@ import (
 	"go/ast"
 	"go/build"
 	"go/format"
-	"go/importer"
-	"go/parser"
 	"go/token"
 	"go/types"
 	"html/template"
@@ -18,6 +16,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"golang.org/x/tools/go/packages"
 	"golang.org/x/tools/imports"
 )
 
@@ -116,23 +115,21 @@ type GenArgs struct {
 }
 
 func Gen(args GenArgs) error {
-	pkg, err := build.Import(args.SrcPackage, findSrcDir(args.SrcPackage), 0)
+	pkgs, err := packages.Load(&packages.Config{Mode: packages.LoadSyntax}, args.SrcPackage)
 	if err != nil {
-		return errors.New("failed to import package: " + err.Error())
+		return errors.New("error loading packages: " + err.Error())
+	}
+	pkg := pkgs[0]
+
+	if len(pkg.Errors) > 0 {
+		for _, err := range pkg.Errors {
+			log.Println("  " + err.Error())
+		}
+		return errors.New("pkg contained errors")
 	}
 
-	var (
-		fset      = token.NewFileSet()
-		asts      []*ast.File
-		toProcess []*ast.Ident
-	)
-	for _, filename := range pkg.GoFiles {
-		f, err := parser.ParseFile(fset, filepath.Join(pkg.Dir, filename), nil, parser.ParseComments)
-		if err != nil {
-			panic(err)
-		}
-		asts = append(asts, f)
-
+	var toProcess []*ast.Ident
+	for _, f := range pkg.Syntax {
 		for _, decl := range f.Decls {
 			if name := isRPCService(decl); name != nil {
 				toProcess = append(toProcess, name)
@@ -140,21 +137,12 @@ func Gen(args GenArgs) error {
 		}
 	}
 
-	var (
-		info        = types.Info{Defs: make(map[*ast.Ident]types.Object)}
-		typesConfig = types.Config{Importer: importer.For("source", nil)}
-	)
-
-	if _, err := typesConfig.Check(pkg.Dir, fset, asts, &info); err != nil {
-		return errors.New("error type-checking source file: " + err.Error())
-	}
-
 	td := TemplateData{
 		PackageName: args.PackageName,
 	}
 
 	for _, name := range toProcess {
-		td.Services = append(td.Services, newService(info.Defs[name].Type().(*types.Named), args.Verbose))
+		td.Services = append(td.Services, newService(pkg.TypesInfo.Defs[name].Type().(*types.Named), args.Verbose))
 	}
 
 	var buf bytes.Buffer
