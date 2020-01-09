@@ -2,20 +2,32 @@ package gopherpc_test
 
 import (
 	"bytes"
+	"io/ioutil"
+	"log"
 	"strings"
 	"testing"
 
 	"github.com/dradtke/gopherpc"
+	"golang.org/x/tools/go/packages"
 )
 
 func TestGen(t *testing.T) {
+	if !testing.Verbose() {
+		log.SetOutput(ioutil.Discard)
+	}
+
+	pkgs, err := packages.Load(&packages.Config{
+		Mode: packages.NeedTypes | packages.NeedTypesInfo | packages.NeedSyntax,
+	}, "github.com/dradtke/gopherpc/testdata/server")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(pkgs) != 1 {
+		t.Fatalf("unexpected number of packages: %d", len(pkgs))
+	}
+
 	var buf bytes.Buffer
-	if err := gopherpc.Gen(gopherpc.GenArgs{
-		Verbose:     testing.Verbose(),
-		Out:         &buf,
-		SrcPackage:  "github.com/dradtke/gopherpc/testdata/server",
-		PackageName: "rpc",
-	}); err != nil {
+	if err := gopherpc.Gen(pkgs[0], "rpc", &buf, gopherpc.Wasm); err != nil {
 		t.Fatal(err)
 	}
 

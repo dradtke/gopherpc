@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"math/rand"
+	"sync/atomic"
 )
 
 // clientRequest represents a JSON-RPC request sent by a client.
@@ -25,18 +25,24 @@ type clientResponse struct {
 	Id     uint64           `json:"id"`
 }
 
-type Encoding struct{}
+type Encoding struct {
+	id uint64
+}
 
-func (e Encoding) EncodeRequest(serviceMethod string, arg interface{}) ([]byte, error) {
+func (e *Encoding) ContentType() string {
+	return "application/json"
+}
+
+func (e *Encoding) EncodeRequest(serviceMethod string, arg interface{}) ([]byte, error) {
 	c := &clientRequest{
 		Method: serviceMethod,
 		Params: [1]interface{}{arg},
-		Id:     uint64(rand.Int63()),
+		Id:     atomic.AddUint64(&e.id, 1),
 	}
 	return json.Marshal(c)
 }
 
-func (e Encoding) DecodeResponse(r io.Reader, reply interface{}) error {
+func (e *Encoding) DecodeResponse(r io.Reader, reply interface{}) error {
 	var c clientResponse
 	if err := json.NewDecoder(r).Decode(&c); err != nil {
 		return errors.New("failed to decode response: " + err.Error())
