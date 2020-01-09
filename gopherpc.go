@@ -152,7 +152,7 @@ func (c RPC) call(serviceMethod string, arg, ret interface{}) error {
 	}
 	defer resp.Body.Close()
 
-	if err := c.Encoding.DecodeResponse(resp.Body); err != nil {
+	if err := c.Encoding.DecodeResponse(resp.Body, ret); err != nil {
 		return errors.New("failed to decode response: " + err.Error())
 	}
 

@@ -32,7 +32,8 @@ func main() {
 	}
 
 	pkgs, err := packages.Load(&packages.Config{
-		Mode: packages.NeedTypes | packages.NeedTypesInfo | packages.NeedSyntax,
+		BuildFlags: []string{"-tags", "!js"},
+		Mode:       packages.NeedTypes | packages.NeedTypesInfo | packages.NeedSyntax,
 	}, *scan)
 	if err != nil {
 		log.Fatalf("failed to load package %s: %s", *scan, err)
