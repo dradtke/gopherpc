@@ -241,7 +241,7 @@ func Gen(pkg *packages.Package, outputPackageName string, w io.Writer, mode Mode
 	td := TemplateData{PackageName: outputPackageName}
 
 	for _, name := range toProcess {
-		td.Services = append(td.Services, newService(pkg.TypesInfo.Defs[name].Type().(*types.Named)))
+		td.Services = append(td.Services, newService(pkg, name))
 	}
 
 	var buf bytes.Buffer
@@ -277,7 +277,8 @@ func isRPCService(decl ast.Decl) *ast.Ident {
 	return nil
 }
 
-func newService(serviceType *types.Named) Service {
+func newService(pkg *packages.Package, name *ast.Ident) Service {
+	serviceType := pkg.TypesInfo.Defs[name].Type().(*types.Named)
 	service := Service{Name: serviceType.Obj().Name()}
 	log.Printf("processing service %s", service.Name)
 
@@ -328,7 +329,11 @@ loop:
 		if method.ParamName != "_" {
 			switch t := param.Type().(*types.Pointer).Elem().(type) {
 			case *types.Named:
-				method.ParamType = "*" + t.Obj().Pkg().Name() + "." + t.Obj().Name()
+				if t.Obj().Pkg().Path() == pkg.Types.Path() {
+					method.ParamType = "*" + t.Obj().Name()
+				} else {
+					method.ParamType = "*" + t.Obj().Pkg().Name() + "." + t.Obj().Name()
+				}
 			case *types.Basic:
 				method.ParamType = t.Name()
 			default:
