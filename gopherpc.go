@@ -16,8 +16,6 @@ import (
 	"golang.org/x/tools/imports"
 )
 
-// TODO: rework this to work with WebAssembly
-
 var (
 	jsOutputTemplate = template.Must(template.New("").Parse(`// +build js,!wasm
 
@@ -31,10 +29,10 @@ import (
 	"honnef.co/go/js/xhr"
 )
 
-// Client represents a handle to an RPC endpoint.
-type Client struct {
-	// URL is the endpoint to send RPC requests to.
-	URL string
+{{range $service := .Services}}
+type {{$service.Name}} struct {
+	// Endpoint is the endpoint to send RPC requests to.
+	Endpoint string
 
 	// CSRFToken is the CSRF token to include with each request.
 	CSRFToken string
@@ -51,31 +49,24 @@ type Client struct {
 	}
 }
 
-func (c Client) call(serviceMethod string, arg, ret interface{}) error {
-	if c.Encoding == nil {
+func (s {{$service.Name}}) call(method string, arg, ret interface{}) error {
+	if s.Encoding == nil {
 		return errors.New("no rpc encoding specified!")
 	}
 
-	message, err := c.Encoding.EncodeRequest(serviceMethod, arg)
+	message, err := s.Encoding.EncodeRequest("{{$service.Name}}." + method, arg)
 	if err != nil {
 		return err
 	}
 
-	req := xhr.NewRequest("POST", c.URL)
-	req.SetRequestHeader("X-CSRF-Token", c.CSRFToken)
+	req := xhr.NewRequest("POST", s.Endpoint)
+	req.SetRequestHeader("X-CSRF-Token", s.CSRFToken)
 	req.SetRequestHeader("Content-Type", "application/json")
 	if err := req.Send(message); err != nil {
 		return err
 	}
 
-	return c.Encoding.DecodeResponse(strings.NewReader(req.ResponseText), &ret)
-}
-
-{{range $service := .Services}}
-type {{$service.Name}} struct { Client }
-
-func (c Client) {{$service.Name}}() {{$service.Name}} {
-	return {{$service.Name}}{c}
+	return s.Encoding.DecodeResponse(strings.NewReader(req.ResponseText), &ret)
 }
 
 {{range $method := $service.Methods}}
@@ -105,9 +96,10 @@ import (
 	"net/http"
 )
 
-type RPC struct {
-	// URL is the endpoint to send RPC requests to.
-	URL string
+{{range $service := .Services}}
+type {{$service.Name}} struct {
+	// Endpoint is the endpoint to send RPC requests to.
+	Endpoint string
 
 	// CSRFToken is the CSRF token to include with each request.
 	CSRFToken string
@@ -128,52 +120,45 @@ type RPC struct {
 	HttpClient http.Client
 }
 
-func (c RPC) call(serviceMethod string, arg, ret interface{}) error {
-	if c.Encoding == nil {
+func (s {{$service.Name}}) call(method string, arg, ret interface{}) error {
+	if s.Encoding == nil {
 		return errors.New("no rpc encoding specified!")
 	}
 
-	message, err := c.Encoding.EncodeRequest(serviceMethod, arg)
+	message, err := s.Encoding.EncodeRequest("{{$service.Name}}." + method, arg)
 	if err != nil {
 		return errors.New("failed to encode request argument: " + err.Error())
 	}
 
-	req, err := http.NewRequest("POST", c.URL, bytes.NewReader(message))
+	req, err := http.NewRequest("POST", s.Endpoint, bytes.NewReader(message))
 	if err != nil {
 		return errors.New("failed to construct request: " + err.Error())
 	}
 
-	req.Header.Add("X-CSRF-Token", c.CSRFToken)
-	req.Header.Add("Content-Type", c.Encoding.ContentType())
+	req.Header.Add("X-CSRF-Token", s.CSRFToken)
+	req.Header.Add("Content-Type", s.Encoding.ContentType())
 
-	resp, err := c.HttpClient.Do(req)
+	resp, err := s.HttpClient.Do(req)
 	if err != nil {
 		return errors.New("failed to execute request: " + err.Error())
 	}
 	defer resp.Body.Close()
 
-	if err := c.Encoding.DecodeResponse(resp.Body, ret); err != nil {
+	if err := s.Encoding.DecodeResponse(resp.Body, ret); err != nil {
 		return errors.New("failed to decode response: " + err.Error())
 	}
 
 	return nil
 }
 
-{{range $service := .Services}}
-type {{$service.Name}} struct { RPC }
-
-func (c RPC) {{$service.Name}}() {{$service.Name}} {
-	return {{$service.Name}}{c}
-}
-
 {{range $method := $service.Methods}}
 func (s {{$service.Name}}) {{$method.Name}}({{$method.Params}}) {{$method.Return}} {
 {{- if .ReturnType}}
 	var reply {{$method.ReturnType}}
-	err := s.call("{{$service.Name}}.{{$method.Name}}", {{$method.ParamNameOrNil}}, &reply)
+	err := s.call("{{$method.Name}}", {{$method.ParamNameOrNil}}, &reply)
 	return reply, err
 {{- else}}
-	return s.call("{{$service.Name}}.{{$method.Name}}", {{$method.ParamNameOrNil}}, nil)
+	return s.call("{{$method.Name}}", {{$method.ParamNameOrNil}}, nil)
 {{- end}}
 }
 {{end}}

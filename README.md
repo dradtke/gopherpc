@@ -35,8 +35,4 @@ result to be written to. The package name of the output will be inferred from
 the name of the directory it appears in, but that can be overridden with the
 `-pkg` flag.
 
-The output should be written to its own package, as it defines a new `Client`
-type that can be used from other GopherJS code. That package can then be imported
-by other GopherJS code to provide a fully type-safe handle to your RPC services.
-
 See the `testdata` folder for more examples.

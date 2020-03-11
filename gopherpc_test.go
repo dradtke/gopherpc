@@ -2,6 +2,11 @@ package gopherpc_test
 
 import (
 	"bytes"
+	"go/ast"
+	"go/importer"
+	"go/parser"
+	"go/token"
+	"go/types"
 	"io/ioutil"
 	"log"
 	"strings"
@@ -29,6 +34,20 @@ func TestGen(t *testing.T) {
 	var buf bytes.Buffer
 	if err := gopherpc.Gen(pkgs[0], "rpc", &buf, gopherpc.Wasm); err != nil {
 		t.Fatal(err)
+	}
+
+	// Log the result so that it's visible if -v is specified.
+	t.Log(buf.String())
+
+	fileset := token.NewFileSet()
+	f, err := parser.ParseFile(fileset, "", buf.String(), parser.AllErrors)
+	if err != nil {
+		t.Fatalf("generated code failed to parse: %s", err)
+	}
+
+	config := types.Config{Importer: importer.Default()}
+	if _, err = config.Check("", fileset, []*ast.File{f}, nil); err != nil {
+		t.Fatalf("generated code failed to typecheck: %s", err)
 	}
 
 	if !strings.Contains(buf.String(), "type EchoService struct") {
