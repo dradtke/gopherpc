@@ -32,7 +32,7 @@ func TestGen(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	if err := gopherpc.Gen(pkgs[0], "rpc", &buf, gopherpc.Wasm); err != nil {
+	if err := gopherpc.Gen(pkgs[0], "rpc", &buf, gopherpc.Default); err != nil {
 		t.Fatal(err)
 	}
 

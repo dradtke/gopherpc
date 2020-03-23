@@ -18,7 +18,7 @@ func main() {
 		scan              = flag.String("scan", "", "path of the package to scan")
 		outputFile        = flag.String("o", "", "output file to generate")
 		outputPackageName = flag.String("pkg", "", "name of the package to generate; if not specified, will be inferred from -o")
-		mode              = flag.String("mode", "js", "output mode, one of js (for GopherJS) or wasm")
+		mode              = flag.String("mode", "", "output mode, use 'js' for compatibility with GopherJS")
 	)
 	flag.Parse()
 
