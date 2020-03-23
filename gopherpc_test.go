@@ -50,11 +50,11 @@ func TestGen(t *testing.T) {
 		t.Fatalf("generated code failed to typecheck: %s", err)
 	}
 
-	if !strings.Contains(buf.String(), "type EchoService struct") {
-		t.Error("generated RPC file does not contain EchoService")
+	if !strings.Contains(buf.String(), "type EchoServiceClient struct") {
+		t.Error("generated RPC file does not contain EchoServiceClient")
 	}
 
-	if !strings.Contains(buf.String(), "func (s EchoService) Ping() (string, error)") {
-		t.Error("generated RPC file does not contain EchoService.Ping")
+	if !strings.Contains(buf.String(), "func (s EchoServiceClient) Ping() (string, error)") {
+		t.Error("generated RPC file does not contain EchoServiceClient.Ping")
 	}
 }

@@ -15,16 +15,12 @@ import (
 func main() {
 	var (
 		verbose           = flag.Bool("v", false, "enable verbose output")
-		scan              = flag.String("scan", "", "path of the package to scan")
-		outputFile        = flag.String("o", "", "output file to generate")
+		scan              = flag.String("scan", ".", "path of the package to scan")
+		outputFile        = flag.String("o", "rpc_gen.go", "output file to generate")
 		outputPackageName = flag.String("pkg", "", "name of the package to generate; if not specified, will be inferred from -o")
 		mode              = flag.String("mode", "", "output mode, use 'js' for compatibility with GopherJS")
 	)
 	flag.Parse()
-
-	if *scan == "" {
-		log.Fatal("-scan must be specified")
-	}
 
 	genMode, err := gopherpc.NewMode(*mode)
 	if err != nil {
@@ -48,7 +44,7 @@ func main() {
 
 	var w io.Writer
 
-	if *outputFile == "" {
+	if *outputFile == "" || *outputFile == "-" {
 		w = os.Stdout
 		if *outputPackageName == "" {
 			log.Fatal("-pkg must be specified if -o is not")

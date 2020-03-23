@@ -30,7 +30,7 @@ import (
 )
 
 {{range $service := .Services}}
-type {{$service.Name}} struct {
+type {{$service.ClientName}} struct {
 	// Endpoint is the endpoint to send RPC requests to.
 	Endpoint string
 
@@ -53,7 +53,7 @@ type {{$service.Name}} struct {
 	HttpClient http.Client
 }
 
-func (s {{$service.Name}}) call(method string, arg, ret interface{}) error {
+func (s {{$service.ClientName}}) call(method string, arg, ret interface{}) error {
 	if s.Encoding == nil {
 		return errors.New("no rpc encoding specified!")
 	}
@@ -85,7 +85,7 @@ func (s {{$service.Name}}) call(method string, arg, ret interface{}) error {
 }
 
 {{range $method := $service.Methods}}
-func (s {{$service.Name}}) {{$method.Name}}({{$method.Params}}) {{$method.Return}} {
+func (s {{$service.ClientName}}) {{$method.Name}}({{$method.Params}}) {{$method.Return}} {
 {{- if .ReturnType}}
 	var reply {{$method.ReturnType}}
 	err := s.call("{{$method.Name}}", {{$method.ParamNameOrNil}}, &reply)
@@ -112,7 +112,7 @@ import (
 )
 
 {{range $service := .Services}}
-type {{$service.Name}} struct {
+type {{$service.ClientName}} struct {
 	// Endpoint is the endpoint to send RPC requests to.
 	Endpoint string
 
@@ -131,7 +131,7 @@ type {{$service.Name}} struct {
 	}
 }
 
-func (s {{$service.Name}}) call(method string, arg, ret interface{}) error {
+func (s {{$service.ClientName}}) call(method string, arg, ret interface{}) error {
 	if s.Encoding == nil {
 		return errors.New("no rpc encoding specified!")
 	}
@@ -152,7 +152,7 @@ func (s {{$service.Name}}) call(method string, arg, ret interface{}) error {
 }
 
 {{range $method := $service.Methods}}
-func (s {{$service.Name}}) {{$method.Name}}({{$method.Params}}) {{$method.Return}} {
+func (s {{$service.ClientName}}) {{$method.Name}}({{$method.Params}}) {{$method.Return}} {
 {{- if .ReturnType}}
 	var reply {{$method.ReturnType}}
 	err := s.call("{{$service.Name}}.{{$method.Name}}", {{$method.ParamNameOrNil}}, &reply)
@@ -263,7 +263,10 @@ func isRPCService(decl ast.Decl) *ast.Ident {
 
 func newService(pkg *packages.Package, name *ast.Ident) Service {
 	serviceType := pkg.TypesInfo.Defs[name].Type().(*types.Named)
-	service := Service{Name: serviceType.Obj().Name()}
+	service := Service{
+		Name:       serviceType.Obj().Name(),
+		ClientName: serviceType.Obj().Name() + "Client",
+	}
 	log.Printf("processing service %s", service.Name)
 
 loop:
@@ -344,8 +347,9 @@ loop:
 }
 
 type Service struct {
-	Name    string
-	Methods []Method
+	Name       string
+	ClientName string
+	Methods    []Method
 }
 
 type Method struct {
